@@ -10,7 +10,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/soto-project/soto-core", .branch("benchmark-threadpool")),
-=        .package(name: "Benchmark", url: "https://github.com/google/swift-benchmark", from: "0.1.0"),
+        .package(name: "Benchmark", url: "https://github.com/google/swift-benchmark", from: "0.1.0"),
     ],
     targets: [
         .target(name: "soto-benchmark", dependencies: [
