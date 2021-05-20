@@ -497,14 +497,15 @@ extension AWSClient {
                 default:
                     streaming = false
                 }
-                return self.invoke(
+                return eventLoop.makeFailedFuture(ClientError.alreadyShutdown)
+/*                return self.invoke(
                     with: config,
                     eventLoop: eventLoop,
                     logger: logger,
                     request: { eventLoop in execute(request, eventLoop, logger) },
                     processResponse: processResponse,
                     streaming: streaming
-                )
+                )*/
             }
         return recordRequest(future, service: config.service, operation: operationName, logger: logger)
     }

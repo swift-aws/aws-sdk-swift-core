@@ -5,9 +5,12 @@ import PackageDescription
 
 let package = Package(
     name: "soto-benchmark",
+    products: [
+        .executable(name: "SotoBenchmark", targets: ["soto-benchmark"])
+    ],
     dependencies: [
-        .package(url: "https://github.com/soto-project/soto-core", .branch("main")),
-        .package(name: "Benchmark", url: "https://github.com/google/swift-benchmark", from: "0.1.0"),
+        .package(url: "https://github.com/soto-project/soto-core", .branch("benchmark-threadpool")),
+=        .package(name: "Benchmark", url: "https://github.com/google/swift-benchmark", from: "0.1.0"),
     ],
     targets: [
         .target(name: "soto-benchmark", dependencies: [

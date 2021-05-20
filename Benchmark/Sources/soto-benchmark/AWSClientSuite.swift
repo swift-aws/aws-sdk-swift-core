@@ -57,13 +57,17 @@ struct Shape: AWSEncodableShape {
     let d: [String: Int]
 }
 
-let awsClientSuite = BenchmarkSuite(name: "AWSClient", settings: Iterations(10000), WarmupIterations(2)) { suite in
+let awsClientSuite = BenchmarkSuite(name: "AWSClient", settings: Iterations(1000), WarmupIterations(2)) { suite in
     // time request construction by throwing an error in request middleware. This means waiting on client.execute should
     // take the amount of time it took to construct the request
+    let threadPool = NIOThreadPool(numberOfThreads: System.coreCount)
+    let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+    threadPool.start()
     let client = AWSClient(
-        credentialProvider: .static(accessKeyId: "foo", secretAccessKey: "bar"),
-        middlewares: [RequestThrowMiddleware()],
-        httpClientProvider: .createNew
+        credentialProvider: .static(accessKeyId: "MYACCESSKEY", secretAccessKey: "MYSECRETACCESSKEY"),
+        //middlewares: [RequestThrowMiddleware()],
+        options: .init(threadPool: threadPool),
+        httpClientProvider: .createNewWithEventLoopGroup(eventLoopGroup)
     )
     let jsonService = AWSServiceConfig(
         region: .useast1, partition: .aws, service: "test-service", serviceProtocol: .json(version: "1.1"), apiVersion: "10-10-2010"
@@ -90,7 +94,14 @@ let awsClientSuite = BenchmarkSuite(name: "AWSClient", settings: Iterations(1000
     }
 
     // test json, xml and query generation timing
-    let input = Shape(a: "TestString", b: 345_348, c: ["one", "two", "three"], d: ["one": 1, "two": 2, "three": 3])
+    let input = Shape(
+        a: """
+        TestString
+        """,
+        b: 345_348,
+        c: ["one", "two", "three"],
+        d: ["one": 1, "two": 2, "three": 3]
+    )
     suite.benchmark("json-request") {
         try? client.execute(operation: "TestOperation", path: "/", httpMethod: .GET, serviceConfig: jsonService, input: input).wait()
     }
@@ -99,5 +110,11 @@ let awsClientSuite = BenchmarkSuite(name: "AWSClient", settings: Iterations(1000
     }
     suite.benchmark("query-request") {
         try? client.execute(operation: "TestOperation", path: "/", httpMethod: .GET, serviceConfig: queryService, input: input).wait()
+    }
+    suite.benchmark("multiple-request") {
+        let futures: [EventLoopFuture<Void>] = (0..<16).map { _ in
+            client.execute(operation: "TestOperation", path: "/", httpMethod: .GET, serviceConfig: queryService, input: input)
+        }
+        try? EventLoopFuture.andAllComplete(futures, on: client.eventLoopGroup.next()).wait()
     }
 }
