@@ -470,7 +470,7 @@ extension AWSClient {
                 // construct signer
                 let signer = AWSSigner(credentials: credential, name: config.signingName, region: config.region.rawValue)
                 // create request and sign with signer
-                if let threadPool = self.options.threadPool {
+                if let threadPool = self.options.threadPool, !credential.isEmpty() {
                     return threadPool.runIfActive(eventLoop: eventLoop) {
                         let awsRequest = try createRequest()
                         return try awsRequest
